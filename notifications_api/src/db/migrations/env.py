@@ -6,12 +6,11 @@ from sqlalchemy import pool
 from pathlib import Path
 from alembic import context
 
-from src import User
+from src.models.user import User
 
 sys.path = ['', '..'] + sys.path[1:]
 project_dir = Path(__file__).absolute().parent.parent.parent.parent
 sys.path.append(str(project_dir))
-
 
 
 config = context.config

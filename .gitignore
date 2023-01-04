@@ -1,2 +1,3 @@
 /consumer/src/.env
 /notifications_api/.env
+/notifications_api/worker/.env

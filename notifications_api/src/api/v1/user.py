@@ -55,7 +55,6 @@ async def user_registration(
 @router.get('/verification', response_class=HTMLResponse)
 async def email_verification(request: Request, token: str):
     payload = jwt.decode(token, 'secret', algorithms=['HS256'])
-    # payload = jwt.decode(token, config_credentials['SECRET'])
     user = session.query(User).filter(User.id == payload["id"]).first()
     session.query(User).filter(User.id == payload['id']).update(
         {"is_verified": True}, synchronize_session="fetch")
@@ -64,7 +63,6 @@ async def email_verification(request: Request, token: str):
         print('&&&&&&')
         return templates.TemplateResponse("verification.html",
                                           {"request": request,
-                                           # })
                                            "username": f"{user.first_name} {user.last_name}"})
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

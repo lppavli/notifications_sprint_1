@@ -1,15 +1,7 @@
-from datetime import datetime
 from enum import Enum
+from typing import List
 
 from pydantic import BaseModel
-
-
-class UserModel(BaseModel):
-    id: str
-    login: str
-    email: str
-    first_name: str
-    last_name: str
 
 
 class Source(str, Enum):
@@ -21,10 +13,14 @@ class Source(str, Enum):
 class EventType(str, Enum):
     welcome_letter = 'welcome_letter'
     critique_likes = 'critique_likes'
+    mailing_list = 'mailing_list'
 
 
-class Notice(BaseModel):
-    user: UserModel
+class Event(BaseModel):
     source: Source
     event_type: EventType
-    scheduled_datetime: datetime
+    payload: List
+
+
+class EventSent(BaseModel):
+    event_sent: bool

@@ -1,4 +1,4 @@
-import uuid
+import uuid as uuid
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import Column, String, Boolean
 from sqlalchemy.orm import declarative_base
