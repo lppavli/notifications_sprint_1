@@ -7,7 +7,7 @@ import sys
 from fastapi_mail import FastMail, MessageSchema, MessageType
 import jwt
 from config.config import conf, settings
-
+from auth_data import get_data_from_auth
 
 conn_params = pika.ConnectionParameters(settings.RABBITMQ_HOST, settings.RABBITMQ_PORT)
 connection = pika.BlockingConnection(conn_params)
@@ -15,7 +15,6 @@ channel = connection.channel()
 
 channel.queue_declare(queue='admin-mails', durable=True)
 channel.queue_declare(queue='welcome-email', durable=True)
-print("Waiting for messages. To exit press CTRL+C")
 
 
 def main():
@@ -24,26 +23,25 @@ def main():
 
     async def welcome_callback(ch, method, properties, body):
         notice = json.loads(body.decode())
+        notice = json.loads(notice)
+        user = get_data_from_auth(notice["user_id"])
         token_data = {
-            "id": notice["user"]["id"],
-            "login": notice['user']['login']
+            "id": user["id"],
+            "login": user["login"]
         }
 
         token = jwt.encode(token_data, 'secret')
-        print(token)
         message = MessageSchema(
                 subject="Fastapi-Mail module",
-                recipients=[notice["user"]["email"]],
+                recipients=[user["email"]],
                 template_body={"link": f"http://localhost:8000/api/v1/users/verification?token={token}"},
                 subtype=MessageType.html,
             )
         fm = FastMail(conf)
         await fm.send_message(message, template_name="email_template.html")
-        print('sending')
 
     async def mailing_callback(ch, method, properties, body):
         notice = json.loads(body.decode())
-        print(notice)
         message = MessageSchema(
                 subject="Fastapi-Mail module",
                 recipients=notice["emails"],
@@ -56,7 +54,6 @@ def main():
             )
         fm = FastMail(conf)
         await fm.send_message(message, template_name="mail.html")
-        print('sending')
 
     def receive_welcome(ch, method, properties, body):
         loop.run_until_complete(welcome_callback(ch, method, properties, body))
@@ -70,7 +67,6 @@ def main():
     channel.basic_consume(queue='admin-mails',
                           auto_ack=True,
                           on_message_callback=receive_admin_mailing)
-    print(' [*] Waiting for messages. To exit press CTRL+C')
     channel.start_consuming()
 
 

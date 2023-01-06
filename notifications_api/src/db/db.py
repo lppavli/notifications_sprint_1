@@ -1,16 +1,15 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 
 from src.config.config import settings
 
-database_url = f'postgresql+psycopg2://' \
+
+DB_URL = f'postgresql+asyncpg://' \
                f'{settings.DB_USERNAME}:{settings.DB_PASSWORD}' \
                f'@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}'
 
-engine = create_engine(database_url, echo=True, future=True)
-session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+engine = create_async_engine(DB_URL, future=True, echo=True)
+async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
-
-def get_session():
-    with Session(engine) as session:
-        yield session
+Base = declarative_base()

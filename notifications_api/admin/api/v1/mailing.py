@@ -6,11 +6,9 @@ from starlette.responses import JSONResponse
 from starlette.templating import Jinja2Templates
 
 from admin.services import producer
-from src.db.db import session
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
-session = session()
 
 
 @router.post('/', description='Create new mailing',

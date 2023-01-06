@@ -2,48 +2,41 @@ import json
 from datetime import datetime
 
 import jwt
-from fastapi import APIRouter, Request, HTTPException
+from sqlalchemy import update
+
+from fastapi import APIRouter, Request, HTTPException, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from starlette import status
 
 from starlette.responses import JSONResponse, HTMLResponse
 from starlette.templating import Jinja2Templates
 
-from src.db.db import session
-from src.models.events import UserModel, Source, EventType, Notice
+from src.db.db import async_session
+from src.models.events import Source, EventType, Notice
 from src.models.user import User
 from src.services import producer
+from src.services.auth import Auth
+from worker.auth_data import get_data_from_auth
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
-session = session()
+security = HTTPBearer()
+auth_handler = Auth()
 
 
 @router.post('/signup', description='New user',
              response_description='User registration',
              )
 async def user_registration(
-        login: str,
-        email: str,
-        password: str,
-        first_name: str,
-        last_name: str
+        credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """Send welcome letter to user."""
-    new_user = User(login=login, email=email, first_name=first_name, last_name=last_name)
-    new_user.set_password(password)
-    session.add(new_user)
-    session.commit()
-    print(new_user)
-    user = UserModel(id=str(new_user.id),
-                     login=new_user.login,
-                     email=new_user.email,
-                     first_name=first_name,
-                     last_name=last_name
-                     )
+    token = credentials.credentials
+    user_id = auth_handler.decode_token(token)
     source = Source.email
     event_type = EventType.welcome_letter
     notice = Notice(
-        user=user,
+        user_id=user_id,
         source=source,
         event_type=event_type,
         scheduled_datetime=datetime.now()
@@ -54,18 +47,20 @@ async def user_registration(
 
 @router.get('/verification', response_class=HTMLResponse)
 async def email_verification(request: Request, token: str):
-    payload = jwt.decode(token, 'secret', algorithms=['HS256'])
-    user = session.query(User).filter(User.id == payload["id"]).first()
-    session.query(User).filter(User.id == payload['id']).update(
-        {"is_verified": True}, synchronize_session="fetch")
-    session.commit()
-    if user:
-        print('&&&&&&')
-        return templates.TemplateResponse("verification.html",
-                                          {"request": request,
-                                           "username": f"{user.first_name} {user.last_name}"})
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid or expired token",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    async with async_session() as session:
+        async with session.begin():
+            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+            user = get_data_from_auth(payload["id"])
+            query = update(User).where(id == str(payload["id"]))
+            query = query.values(is_verified=True)
+            query.execution_options(synchronize_session="fetch")
+            await session.execute(query)
+            if user:
+                return templates.TemplateResponse("verification.html",
+                                                  {"request": request,
+                                                   "username": f'{user["first_name"]} {user["last_name"]}'})
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )

@@ -19,7 +19,6 @@ class Settings(BaseSettings):
     RABBITMQ_EXCHANGE: Optional[str]
     RABBITMQ_EXCHANGE_TYPE: Optional[str]
     RABBITMQ_QUEUE_NAME: Optional[str]
-    RABBITMQ_QUEUE_DELAY: Optional[str]
 
     RABBITMQ_HOST: Optional[str]
     RABBITMQ_PORT: Optional[str]
@@ -32,6 +31,7 @@ class Settings(BaseSettings):
     MAIL_SERVER: str
     MAIL_FROM_NAME: str
 
+    AUTH_SERVICE: str
 
     class Config:
         env_file = '.env'
@@ -53,5 +53,4 @@ conf = ConnectionConfig(
     USE_CREDENTIALS=True,
     VALIDATE_CERTS=True,
     TEMPLATE_FOLDER='templates',
-    # TEMPLATE_FOLDER=Path(__file__).parent / 'templates',
 )

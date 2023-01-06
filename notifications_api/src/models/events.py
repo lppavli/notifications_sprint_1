@@ -24,7 +24,7 @@ class EventType(str, Enum):
 
 
 class Notice(BaseModel):
-    user: UserModel
+    user_id: str
     source: Source
     event_type: EventType
     scheduled_datetime: datetime

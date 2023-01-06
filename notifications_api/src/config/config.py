@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     MAIL_SERVER: str
     MAIL_FROM_NAME: str
 
+    AUTH_SERVICE: str
 
     class Config:
         env_file = '.env'
@@ -52,5 +53,4 @@ conf = ConnectionConfig(
     USE_CREDENTIALS=True,
     VALIDATE_CERTS=True,
     TEMPLATE_FOLDER='templates',
-    # TEMPLATE_FOLDER=Path(__file__).parent / 'templates',
 )
